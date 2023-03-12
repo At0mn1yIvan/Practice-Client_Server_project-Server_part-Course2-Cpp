@@ -3,6 +3,8 @@
 #include <winsock2.h> // Библиотека для работы с сетью (2 версия)
 #include "Patient.h"
 #include <iostream>
+#include <WinUser.h>
+
 
 
 #pragma warning(disable: 4996)
@@ -12,6 +14,7 @@
 class ConnectionListener
 {
 private:
+	
 	//SOCKET _socket;
 	static SOCKET Connections[100];
 	static int Counter; // Переменная, хранящая индекс соединения

@@ -143,7 +143,6 @@
     <ClCompile Include="Patient.cpp" />
     <ClCompile Include="PatientRepository.cpp" />
     <ClCompile Include="Queue.cpp" />
-    <ClCompile Include="ServerS.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>

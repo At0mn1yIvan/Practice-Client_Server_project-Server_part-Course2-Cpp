@@ -53,7 +53,7 @@ public:
 
 	bool Push(const T& el)
 	{
-		if (!isFull())) {
+		if (!isFull()) {
 			_data[_lastInd] = el;
 			_lastInd = (_lastInd + 1) % _size;
 			_countElem++;

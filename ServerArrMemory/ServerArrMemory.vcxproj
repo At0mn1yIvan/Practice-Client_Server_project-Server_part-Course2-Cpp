@@ -116,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\vcpkg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -140,16 +141,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ConnectionListener.cpp" />
+    <ClCompile Include="DataHandler.cpp" />
     <ClCompile Include="Patient.cpp" />
     <ClCompile Include="PatientRepository.cpp" />
     <ClCompile Include="Queue.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="VIP_Patient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConnectionListener.h" />
+    <ClInclude Include="DataHandler.h" />
     <ClInclude Include="Patient.h" />
     <ClInclude Include="PatientRepository.h" />
     <ClInclude Include="Queue.h" />
+    <ClInclude Include="VIP_Patient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

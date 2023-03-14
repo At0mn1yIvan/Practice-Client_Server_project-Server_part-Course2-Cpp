@@ -1,10 +1,11 @@
+#pragma once
 #include <iostream>
 #include "ConnectionListener.h"
 
 
 int main(){
 	
-	ConnectionListener cl();
+	ConnectionListener cl;
 
 	return 0;
 }

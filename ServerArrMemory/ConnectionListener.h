@@ -1,25 +1,28 @@
 #pragma once
 #pragma comment(lib, "ws2_32.lib") // 
 #include <winsock2.h> // Ѕиблиотека дл€ работы с сетью (2 верси€)
-#include "Patient.h"
+#include "PatientRepository.h"
 #include <iostream>
-#include <WinUser.h>
+#include "DataHandler.h"
 
 
 
 #pragma warning(disable: 4996)
 
 
+
 // Server
 class ConnectionListener
 {
 private:
-	
+
 	//SOCKET _socket;
 	static SOCKET Connections[100];
 	static int Counter; // ѕеременна€, хран€ща€ индекс соединени€
+	static PatientRepository _patient;
+	static DataHandler _optData;
 	SOCKADDR_IN addr;
-	void Listen(int _sizeofaddr){
+	void Listen(int _sizeofaddr) {
 		//—оздание сокета. 
 	//—окет - виртуальна€ конструкци€ из IP-адреса и номера порта. ќна предназначена дл€ того, чтобы программы могли передавать данные друг другу даже в пределах одного компьютера
 		SOCKET sListen = socket(AF_INET, SOCK_STREAM, NULL); //AF_INET указывает на то, что будет использоватьс€ семейство интернет-протоколов;SOCK_STREAM указывает на протокол, содержащий соединение
@@ -29,7 +32,7 @@ private:
 
 		//ѕосле того, как локальный адрес и порт прив€заны к сокету, нужно приступить к прослушиванию порта в ожидании соединени€ со стороны клиента
 		listen(sListen, SOMAXCONN); //ѕо первому параметру ф-и€ определ€ет, по какому порту можно запустить прослушивание. ¬торой параметр - максимально допустимое число запросов, ожидающих обработки
-		
+
 		SOCKET newConnection;
 		for (int i = 0; i < 100; i++) {
 			newConnection = accept(sListen, (SOCKADDR*)&addr, &_sizeofaddr); // accept возвращает указатель на новый сокет;ѕосле выполнени€ функции accept второй параметр будет держать сведени€ об IP-адресе клиента, который произвел подключение 
@@ -38,11 +41,6 @@ private:
 			}
 			else {
 				std::cout << "Client Connected! \n";
-				std::string msg = "Hola hola UNN";
-				int msg_size = msg.size();
-				send(newConnection, (char*)&msg_size, sizeof(int), NULL); //‘ункци€ дл€ передачи длины строки
-				send(newConnection, msg.c_str(), msg_size, NULL); //‘ункци€ дл€ передачи строки клиенту
-
 				Connections[i] = newConnection;
 				Counter++;
 				//ѕосле выполнени€ следующей функции у нас будут работать два потока
@@ -53,13 +51,10 @@ private:
 		}
 
 	}
-	void PrepareData();
-	Patient GetCurPatient();
-	
-	
+
+
 public:
 	ConnectionListener() {
-		Counter = 0;
 		WSAData wsaData; // —труктура, содержаща€ сведени€ о реализации сокетов Windows 
 		WORD DLLVersion = MAKEWORD(2, 2); //«апрашиваема€ верси€ библиотеки winsock
 		if (WSAStartup(DLLVersion, &wsaData) != 0) { //‘ункци€ дл€ загрузки библиотеки (запрашивает версию 2.2 Winsock в системе и задает в качестве самой высокой версии Windows Sockets поддержки
@@ -76,22 +71,21 @@ public:
 		Listen(sizeofaddr);
 	}
 	static void ClientHandler(int index) {
+		char* msg;
 		int msg_size;
 		while (true) {
 			recv(Connections[index], (char*)&msg_size, sizeof(int), NULL);
-			char* msg = new char[msg_size + 1];
+			msg = new char[msg_size + 1];
 			msg[msg_size] = '\0';
 			recv(Connections[index], msg, msg_size, NULL);
-			for (int i = 0; i < Counter; i++) {
-				if (i == index) {
-					continue;
-				}
-				send(Connections[i], (char*)&msg_size, sizeof(int), NULL);
-				send(Connections[i], msg, msg_size, NULL);
-			}
 
-			delete[] msg;
+			std::string pat = _optData.Packing(_patient.GetPatient());
+
+			send(Connections[index], (char*)pat.size(), sizeof(int), NULL);
+			send(Connections[index], pat.c_str(), pat.size(), NULL);
 		}
+
+		delete[] msg;
 	}
 };
 

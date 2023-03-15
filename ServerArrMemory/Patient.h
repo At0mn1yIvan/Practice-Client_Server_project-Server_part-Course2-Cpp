@@ -17,7 +17,8 @@ protected:
 	std::string _patronymic;
 	State _patientState;
 public:
-	Patient() : _patientState(State::Undefined){}
+	//Patient() : _patientState(State::Undefined){}
+	Patient(){}
 
 	Patient(const std::string& firstName,
 		const std::string& lastName,

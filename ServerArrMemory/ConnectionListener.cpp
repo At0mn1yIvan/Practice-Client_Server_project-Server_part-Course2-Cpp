@@ -2,5 +2,5 @@
 
 
 SOCKET ConnectionListener::Connections[100];
-int ConnectionListener::Counter = 0; 
+//int ConnectionListener::Counter = 0; 
 PatientRepository ConnectionListener::_patient;

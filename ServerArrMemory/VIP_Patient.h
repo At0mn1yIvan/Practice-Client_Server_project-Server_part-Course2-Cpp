@@ -5,7 +5,7 @@ class VIP_Patient : public Patient {
 protected:
 	size_t _moneyAmount;
 public:
-	VIP_Patient() : Patient() {}
+	VIP_Patient(): Patient(){}
 
 	VIP_Patient(const std::string& firstName,
 		const std::string& lastName,

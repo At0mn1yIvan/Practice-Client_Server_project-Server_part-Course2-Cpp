@@ -1,5 +1,5 @@
 #pragma once
-#pragma comment(lib, "ws2_32.lib") // 
+#pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h> // Библиотека для работы с сетью (2 версия)
 #include "PatientRepository.h"
 #include <iostream>
@@ -15,21 +15,31 @@
 class ConnectionListener
 {
 private:
-	enum RequestType : char {
-		Login,
-		Get_Patient,
-		Logout
+	enum class RequestType {
+		LOGIN,
+		GETPATIENT,
+		LOGOUT,
 	};
+
+
+	enum class LoggingResponse {
+		AOS,
+		CORRECT,
+		INCORRECT,
+	}; 
 
 	//SOCKET _socket;
 	static SOCKET Connections[100];
-	//static int Counter; // Переменная, хранящая индекс соединения
+	static int Counter; // Переменная, хранящая индекс соединения
 	static PatientRepository _patient;
 	static DataHandler _optData;
+	static std::vector<std::pair<std::pair<std::string, std::string>, SOCKET>> _loggingData;
+
+
 	SOCKADDR_IN addr;
 	void Listen(int _sizeofaddr) {
 		//Создание сокета. 
-	//Сокет - виртуальная конструкция из IP-адреса и номера порта. Она предназначена для того, чтобы программы могли передавать данные друг другу даже в пределах одного компьютера
+		//Сокет - виртуальная конструкция из IP-адреса и номера порта. Она предназначена для того, чтобы программы могли передавать данные друг другу даже в пределах одного компьютера
 		SOCKET sListen = socket(AF_INET, SOCK_STREAM, NULL); //AF_INET указывает на то, что будет использоваться семейство интернет-протоколов;SOCK_STREAM указывает на протокол, содержащий соединение
 
 		//Для привязки адреса сокету используется функция bind
@@ -47,7 +57,7 @@ private:
 			else {
 				std::cout << "Client Connected! \n";
 				Connections[i] = newConnection;
-				//Counter++;
+				Counter++;
 				//После выполнения следующей функции у нас будут работать два потока
 				//Одновременно функцией main будут приниматься новые соединения, а в процедуре ClientHandler будут ожидаться и отправляться сообщения клиентам 
 				//С каждым новым соединением будет запускаться новый поток для принятия сообщения от нового клиента
@@ -57,9 +67,98 @@ private:
 
 	}
 
+	
+
+	static void ClientHandler(int index) {
+		/*
+			std::string pat = _optData.Packing(_patient.GetPatient());
+			int pat_size = pat.size();
+			send(Connections[index], (char*)&pat_size, sizeof(int), NULL);
+			send(Connections[index], pat.c_str(), pat_size, NULL);
+		*/
+		RequestType req;
+		std::string msg_response;
+		int msg_size;
+		while (true)
+		{
+			if (recv(Connections[index], (char*)&req, sizeof(RequestType), NULL) == -1)
+			{
+				for (int i = 0; i < _loggingData.size(); i++)
+				{
+					if (_loggingData[i].second == Connections[index])
+					{
+						_loggingData[i].second = 0;
+						std::cout << "Client № " << index + 1 << " disconnected from server" << std::endl;
+					}
+
+				}
+				break;
+			}
+
+			switch (req)
+			{
+			case  RequestType::LOGIN: {
+				//login
+				recv(Connections[index], (char*)&msg_size, sizeof(int), NULL);
+				char* client_login = new char[msg_size + 1];
+				client_login[msg_size] = '\0';
+				recv(Connections[index], client_login, msg_size, NULL);
+				//password
+				recv(Connections[index], (char*)&msg_size, sizeof(int), NULL);
+				char* client_password = new char[msg_size + 1];
+				client_password[msg_size] = '\0';
+				recv(Connections[index], client_password, msg_size, NULL);
+
+				LoggingResponse lr = checkData(client_login, client_password, Connections[index]);
+				send(Connections[index], (char*)&lr, sizeof(LoggingResponse), NULL);
+				break;
+			}
+			case  RequestType::GETPATIENT: {
+
+				try
+				{
+					msg_response = _optData.Packing(_patient.GetPatient());
+				}
+				catch (std::out_of_range)
+				{
+					msg_response = "Queue is empty";
+				}
+				msg_size = msg_response.size();
+				send(Connections[index], (char*)&msg_size, sizeof(int), NULL);
+				send(Connections[index], msg_response.c_str(), msg_size, NULL);
+				break;
+			}
+			case  RequestType::LOGOUT: {
+				for (int i = 0; i < _loggingData.size(); i++)
+				{
+					if (_loggingData[i].second == Connections[index])
+						Connections[index] = 0;
+				}
+				break;
+			}
+			}
+
+		}
+	}
+
+	static LoggingResponse checkData(const std::string& login, const std::string& password, SOCKET socket)
+	{
+		for (int i = 0; i < _loggingData.size(); i++)
+		{
+			if (_loggingData[i].first.first == login && _loggingData[i].first.second == password)
+				if (!_loggingData[i].second)
+				{
+					_loggingData[i].second = socket;
+					return LoggingResponse::CORRECT;
+				}
+				else
+					return LoggingResponse::AOS;
+		}
+		return LoggingResponse::INCORRECT;
+	}
 
 public:
-	
+
 	ConnectionListener(const char* ip_addr, int port) {
 		WSAData wsaData; // Структура, содержащая сведения о реализации сокетов Windows 
 		WORD DLLVersion = MAKEWORD(2, 2); //Запрашиваемая версия библиотеки winsock
@@ -74,46 +173,21 @@ public:
 		addr.sin_port = htons(port); // Порт для идентификации программы, с поступающими данными, данный порт должен быть свободен
 		addr.sin_family = AF_INET; // Семейство протоколов. Для интернет протоколов указывается константа AF_INET
 
+		//Пароли и логины:
+		std::pair<std::string, std::string> loPas1("hv", "123");
+		std::pair<std::string, std::string> loPas2("atom", "345");
+		std::pair<std::pair<std::string, std::string>, SOCKET> user1(loPas1, 0);
+		std::pair<std::pair<std::string, std::string>, SOCKET> user2(loPas2, 0);
+		_loggingData.push_back(user1);
+		_loggingData.push_back(user2);
+
+
 		Listen(sizeofaddr);
 	}
-	static void ClientHandler(int index) {
-		//char* msg;
-		//int msg_size;
-		/*while (true) {
-			recv(Connections[index], (char*)&msg_size, sizeof(int), NULL);
-			msg = new char[msg_size + 1];
-			msg[msg_size] = '\0';
-			recv(Connections[index], msg, msg_size, NULL);
+	
+	
 
-			std::string pat = _optData.Packing(_patient.GetPatient());
-			int pat_size = pat.size();
-			send(Connections[index], (char*)&pat_size, sizeof(int), NULL);
-			send(Connections[index], pat.c_str(), pat_size, NULL);
-		}*/
-		while (true) {
-			char buffer[1024];
-			int bytesReceived = recv(Connections[index], buffer, 1024, 0);
-			if (bytesReceived > 0)
-			{
-				RequestType type = (RequestType)buffer[0];
-				switch (type)
-				{
-				case Login:
-					break;
-				case Get_Patient: {
-					std::string pat = _optData.Packing(_patient.GetPatient());
-					int pat_size = pat.size();
-					send(Connections[index], (char*)&pat_size, sizeof(int), NULL);
-					send(Connections[index], pat.c_str(), pat_size, NULL);
-					break;
-				}
-				case Logout:
-					break;
-				}
-			}
-		}
-		//delete[] msg;
-	}
+
 };
 
 

@@ -2,6 +2,8 @@
 #include <iostream>
 #include "ConnectionListener.h"
 
+std::vector<std::pair<std::pair<std::string, std::string>, SOCKET>> ConnectionListener::_loggingData;
+
 
 int main(){
 	
